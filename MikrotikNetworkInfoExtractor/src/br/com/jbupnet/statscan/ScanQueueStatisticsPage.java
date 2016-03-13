@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -123,21 +126,23 @@ public class ScanQueueStatisticsPage {
 
 	}
 
-	public static String getCSVHeader(){
+	public static final String getCSVHeader(){
 
-		String lineOut = ""+ 
-				"QueueName"+";"+
-				"IP"+";"+
-				"Avg. In Daily Value"+";"+"Avg. In. Daily Unit"+";"+
-				"Avg. In Weekly Value"+";"+"Avg. In. Weekly Unit"+";"+
-				"Avg. In Monthly Value"+";"+"Avg. In. Monthly Unit"+";"+
-				"Avg. In Yearly Value"+";"+"Avg. In. Yearly Unit"+";"+
-				"Bigger Avg. In. Value"+";"+"Bigger Avg. In. Unit"+";"+
-				"Avg. Out Daily Value"+";"+"Avg. Out Daily Unit"+";"+
-				"Avg. Out Weekly Value"+";"+"Avg. Out Weekly Unit"+";"+
-				"Avg. Out Monthly Value"+";"+"Avg. Out Monthly Unit"+";"+
-				"Avg. Out Yearly Value"+";"+"Avg. Out Yearly Unit"+";"+
-				"Bigger Avg. Out Value"+";"+"Bigger Avg. Out Unit"+"\r\n";
+		final String lineOut = "QueueName"+";"+"IP"+";"+
+
+				"Avg. In Daily (Kbps)"+";"+
+				"Avg. In Weekly (Kbps)"+";"+
+				"Avg. In Monthly (Kbps)"+";"+
+				"Avg. In Yearly (Kbps)"+";"+
+				"Bigger Avg. In (Kbps)"+";"+
+
+				"Avg. Out Daily (Kbps)"+";"+
+				"Avg. Out Weekly (Kbps)"+";"+
+				"Avg. Out Monthly (Kbps)"+";"+
+				"Avg. Out Yearly (Kbps)"+";"+
+				"Bigger Avg. Out (Kbps)"+";"+
+
+				"\r\n";
 
 		//		System.out.println();
 		//		System.out.println("Cabeçalho do arquivo:");
@@ -185,10 +190,8 @@ public class ScanQueueStatisticsPage {
 			String[] in = new String[4];
 			String[] out = new String[4];
 
-			double[] inValues = new double[4];
-			double[] outValues = new double[4];
-			String[] inUnit = new String[4];
-			String[] outUnit = new String[4];
+			ArrayList<Tuple<Double, String>> inValueUnitTuples = new ArrayList<Tuple<Double, String>>();
+			ArrayList<Tuple<Double, String>> outValueUnitTuples = new ArrayList<Tuple<Double, String>>();
 
 			full[0] = nodes.item(2).getTextContent(); //daily
 			full[1] = nodes.item(3).getTextContent(); //weekly
@@ -212,78 +215,57 @@ public class ScanQueueStatisticsPage {
 				out[i] = full[i].substring(outIndexIni, outIndexEnd);
 			}
 
-			//Remove o texto do percentual: Exemplo "(0.0%)" e também os espaços em branco desnecessários
+			//Remove o texto do percentual, (se houver): Exemplo "(0.0%)" e também os espaços em branco desnecessários
 			for(int i = 0 ; i < full.length ; i++){
-				in[i] = in[i].substring(0, in[i].indexOf("(") - 1).trim();
-				out[i] = out[i].substring(0, out[i].indexOf("(") - 1).trim();
+
+				int iIn = in[i].indexOf("(");
+				int iOut = out[i].indexOf("(");
+
+				if(iIn >= 0) in[i] = in[i].substring(0, iIn - 1);
+				if(iOut >= 0) out[i] = out[i].substring(0, iOut - 1);
+
+				in[i] = in[i].trim();
+				out[i] = out[i].trim();
 			}
 
-			//Separa os valores e unidades (b ou Kb ou Mb ou Gb)
+			//Separa os valores em tuplas e adiciona no arraylist de tuplas
 			for(int i = 0 ; i < full.length ; i++){
-				
-				int indexIn = Math.max( Math.max(in[i].indexOf("Gb"), in[i].indexOf("Mb")), in[i].indexOf("Kb"));
-				if(indexIn < 0) indexIn = in[i].indexOf("b");
-				
-				int indexOut = Math.max( Math.max(out[i].indexOf("Gb"), out[i].indexOf("Mb")), out[i].indexOf("Kb"));
-				if(indexOut < 0) indexOut = out[i].indexOf("b");
-				
-				try{
-					inValues[i] = Double.parseDouble(in[i].substring(0, indexIn));
-					outValues[i] = Double.parseDouble(out[i].substring(0, indexOut));
-
-					inUnit[i] = in[i].substring(indexIn, in[i].length());
-					outUnit[i] = out[i].substring(indexOut, out[i].length());
-
-				}catch(Exception e1){
-					e1.printStackTrace();
-				}
+				inValueUnitTuples.add(Util.createTupleValueUnit(in[i]));
+				outValueUnitTuples.add(Util.createTupleValueUnit(out[i]));
 			}
 
 			//Descobre o maior valor dentre as médias (daily, weekly, monthly, yearly)
 			int inBiggest = 0;
 			int outBiggest = 0;
-			for(int i = 0 ; i < in.length ; i++){
 
-				long multIn = inUnit[i].equals("Kb")? 1024L : (inUnit[i].equals("Mb") ? 1024L*1024L : (inUnit[i].equals("Gb")? 1024L*1024L*1024L : 1L));
-				long multOut = outUnit[i].equals("Kb")? 1024L : (outUnit[i].equals("Mb")? 1024L*1024L : (outUnit[i].equals("Gb")? 1024L*1024L*1024L : 1L));
+			for(int i = 1 ; i < in.length ; i++){
 
-				if(((long)inValues[i] * multIn) > ((long)inValues[inBiggest] * multIn)){
+				if(Util.getTotalValueInBits(inValueUnitTuples.get(i)) > Util.getTotalValueInBits(inValueUnitTuples.get(inBiggest))){
 					inBiggest = i;
 				}
-
-				if(((long)outValues[i] * multOut) > ((long)outValues[inBiggest] * multOut)){
+				if(Util.getTotalValueInBits(outValueUnitTuples.get(i)) > Util.getTotalValueInBits(outValueUnitTuples.get(outBiggest))){
 					outBiggest = i;
 				}
 			}
 
-			//			for(int i = 0 ; i < in.length ; i++){
-			//				System.out.println(titles[i]);
-			//				System.out.println("in:" + inValues[i] + " " + inUnit[i]);
-			//				System.out.println("out:" + outValues[i] + " " + outUnit[i]);
-			//				System.out.println();
-			//			}
-			//			System.out.println("Biggest in:" + inValues[inBiggest] + " " + inUnit[inBiggest]);
-			//			System.out.println("Biggest out:" + outValues[outBiggest] + " " + outUnit[outBiggest]);
+			//Adiciona o maior valor como o índice 4 do arraylist de tuplas
+			inValueUnitTuples.add(inValueUnitTuples.get(inBiggest));
+			outValueUnitTuples.add(outValueUnitTuples.get(outBiggest));
 
+			//Cria a linha no padrão CSV
+			String csvLine = queueName+";"+ip+";";
 
-			String lineOut = ""+
-					queueName+";"+
-					ip+";"+
-					inValues[0]+";"+inUnit[0]+";"+
-					inValues[1]+";"+inUnit[1]+";"+
-					inValues[2]+";"+inUnit[2]+";"+
-					inValues[3]+";"+inUnit[3]+";"+
-					inValues[inBiggest]+";"+inUnit[inBiggest]+";"+
-					outValues[0]+";"+outUnit[0]+";"+
-					outValues[1]+";"+outUnit[1]+";"+
-					outValues[2]+";"+outUnit[2]+";"+
-					outValues[3]+";"+outUnit[3]+";"+
-					outValues[outBiggest]+";"+outUnit[outBiggest]+"\r\n";
-			//			System.out.println();
-			//			System.out.println("Linha do arquivo:");
-			//			System.out.println(lineOut);
-
-			return lineOut;
+			double kbits;
+			for(Tuple<Double, String> t : inValueUnitTuples){
+				kbits = Util.getTotalValueInBits(t)/Util.Kbit; //Pega o valor total em bits e converte para kbits
+				csvLine += Double.toString(kbits).replace(".", ",")+";"; //Troca o '.' por ',', porque o excel em português reconhece a vírgula como separador decimal
+			}
+			for(Tuple<Double, String> t : outValueUnitTuples){
+				kbits = Util.getTotalValueInBits(t)/Util.Kbit; //Pega o valor total em bits e converte para kbits
+				csvLine += Double.toString(kbits).replace(".", ",")+";"; //Troca o '.' por ',', porque o excel em português reconhece a vírgula como separador decimal
+			}
+			csvLine += "\r\n";
+			return csvLine;
 
 		}catch(Exception e){
 			e.printStackTrace();
