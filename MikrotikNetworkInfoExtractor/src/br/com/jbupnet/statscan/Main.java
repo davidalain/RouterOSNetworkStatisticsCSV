@@ -13,6 +13,7 @@ public class Main {
 			System.err.println("Execução incorreta! Esperados dois parâmetros.");
 			System.err.println("Exemplo de uso:");
 			System.err.println("MikrotikNetworkInfoExtractor.jar 192.168.88.1 relatorio.csv");
+			return;
 		}
 		
 
