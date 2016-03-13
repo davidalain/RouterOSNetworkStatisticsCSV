@@ -7,38 +7,41 @@ public class Main {
 
 	//============== Funciona com o RouterOS v6.34.3 =======================
 
-	public static void main(String[] args) throws Exception {
-		
-		if(args.length != 2){
-			System.err.println("Execução incorreta! Esperados dois parâmetros.");
-			System.err.println("Exemplo de uso:");
-			System.err.println("MikrotikNetworkInfoExtractor.jar 192.168.88.1 relatorio.csv");
-			return;
-		}
-		
+	public static final String DEFAULT_IP_ADDRESS = "192.168.25.202";
+	public static final String DEFAULT_CSV_FILE = "resultado.csv";
 
-//		final String targetRouterIP = "192.168.25.202";
-//		final String csvFile = "resultado.csv";
-		
-		final String targetRouterIP = args[0];
-		final String csvFile = args[1];
+	public static void main(String[] args) throws Exception {
+
+		if(args.length != 2){
+			System.err.println("Erro: esperados dois parâmetros.");
+			System.err.println("Exemplo de uso:");
+			System.err.println("MikrotikNetworkInfoExtractor.jar TARGET_ROUTEROS_ADDRESS CSV_FILE_PATH");
+			
+			System.err.println();
+			System.err.println("Executando na configuração padrão:");
+			System.err.println("MikrotikNetworkInfoExtractor.jar "+DEFAULT_IP_ADDRESS+" "+DEFAULT_CSV_FILE);
+		}
+
+		final String targetRouterIP = (args.length == 2) ? args[0] : DEFAULT_IP_ADDRESS;
+		final String csvFile = (args.length == 2) ? args[1] : DEFAULT_CSV_FILE;
 
 		BufferedWriter writer = new BufferedWriter(new FileWriter(csvFile));
 
-		String[] urlsArray = ScanMainPage.getURLs(targetRouterIP);
+		writer.write(ScanQueueStatisticsPage.getCSVHeader()); //Cabeçalho do CSV
 
-		writer.write(ScanQueueStatisticsPage.getCSVHeader());
-
-		for(String url : urlsArray){
+		for(String url : ScanMainPage.getURLs(targetRouterIP)){ //Linhas do CSV
 			System.out.println(url);
-			
+
 			writer.write(ScanQueueStatisticsPage.getCSVLine(url));
 		}
-		
-		System.out.println("Gerado arquivo " + args[1]);
 
 		writer.flush();
 		writer.close();
+		
+		if(args.length == 2)
+			System.out.println("Gerado arquivo " + args[1]);
+		else
+			System.out.println("Gerado arquivo " + DEFAULT_CSV_FILE);
 
 	}
 
