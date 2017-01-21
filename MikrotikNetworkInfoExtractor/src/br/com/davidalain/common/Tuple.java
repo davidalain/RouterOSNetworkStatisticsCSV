@@ -1,6 +1,6 @@
-package br.com.jbupnet.statscan;
+package br.com.davidalain.common;
 
-public class Tuple<X, Y> { 
+public class Tuple<X, Y>{ 
     public final X x; 
     public final Y y; 
     public Tuple(X x, Y y) { 
@@ -36,4 +36,5 @@ public class Tuple<X, Y> {
         result = prime * result + ((y == null) ? 0 : y.hashCode());
         return result;
     }
+
 }

@@ -1,6 +1,6 @@
-package br.com.jbupnet.statscan;
+package br.com.davidalain.common;
 
-public class Util {
+public class BitUtil {
 	
 	//Contantes com os valores dos multiplicadores
 	public static final double bit 	= 1.0;
@@ -8,7 +8,13 @@ public class Util {
 	public static final double Mbit = 1024.0 * 1024.0;
 	public static final double Gbit = 1024.0 * 1024.0 * 1024.0;
 
-	public static Tuple<Double, String> createTupleValueUnit(String valueUnit){
+	/**
+	 * Faz o parsing da String recebida e cria um Tuple com valor e unidade
+	 * 
+	 * @param valueUnit
+	 * @return
+	 */
+	public static Tuple<Double, String> parseValueUnit(String valueUnit){
 		
 			//Pega o maior indice dentre as Strings: "Gb", "Mb" e "Kb", caso índice seja < 0, então não contém a String, então o valor está em bytes "b". 
 			int index = Math.max( Math.max(valueUnit.indexOf("Gb"), valueUnit.indexOf("Mb")), valueUnit.indexOf("Kb"));
@@ -25,13 +31,13 @@ public class Util {
 	public static double getMultiplierValue(String multiplierUnit) throws Exception{
 		
 		if(multiplierUnit.equals("b"))
-			return Util.bit;
+			return BitUtil.bit;
 		if(multiplierUnit.equals("Kb"))
-			return Util.Kbit;
+			return BitUtil.Kbit;
 		if(multiplierUnit.equals("Mb"))
-			return Util.Mbit;
+			return BitUtil.Mbit;
 		if(multiplierUnit.equals("Gb"))
-			return Util.Gbit;
+			return BitUtil.Gbit;
 		
 		throw new Exception("Multiplicador desconhecido");
 	}
