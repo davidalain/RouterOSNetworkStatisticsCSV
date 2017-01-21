@@ -1,0 +1,27 @@
+package examples;
+
+import javax.net.SocketFactory;
+
+import br.com.davidalain.common.InputKeyboardUtil;
+import me.legrange.mikrotik.ApiConnection;
+import me.legrange.mikrotik.MikrotikApiException;
+
+/**
+ * Example 9: Try with resources
+ *
+ * @author gideon
+ */
+public class TryWithResources  {
+
+    public static void main(String... args) throws Exception {
+        TryWithResources ex = new TryWithResources();
+        ex.test();
+    }
+
+    private void test() throws MikrotikApiException, InterruptedException {
+        try (ApiConnection con = ApiConnection.connect(SocketFactory.getDefault(), InputKeyboardUtil.getHost(), ApiConnection.DEFAULT_PORT, 2000)) {
+            con.login(InputKeyboardUtil.getUserName(), InputKeyboardUtil.getPassword());
+            con.execute("/user/add name=eric");
+        }
+    }
+}
